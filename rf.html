@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Pitch Changer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #1e1e1e;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+        h2 {
+            margin-top: 0;
+            color: #00adb5;
+        }
+        .control-group {
+            margin: 1.5rem 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .file-upload-btn {
+            display: inline-block;
+            background-color: #00adb5;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .file-upload-btn:hover {
+            background-color: #007a80;
+        }
+        input[type="range"] {
+            width: 100%;
+            accent-color: #00adb5;
+        }
+        span {
+            font-size: 1.1rem;
+            color: #eeeeee;
+        }
+        audio {
+            width: 100%;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Audio Pitch Changer</h2>
+    
+    <!-- File Input -->
+    <div class="control-group">
+        <label for="audioFile" class="file-upload-btn">📁 Choose Audio File</label>
+        <input type="file" id="audioFile" accept="audio/*">
+        <div id="fileName" style="margin-top: 0.5rem; font-size: 0.9rem; color: #aaaaaa;">No file selected</div>
+    </div>
+
+    <!-- HTML5 Audio Element -->
+    <audio id="audioPlayer" controls></audio>
+
+    <!-- Pitch/Speed Slider -->
+    <div class="control-group">
+        <label for="pitchSlider">Pitch / Speed Modifier</label>
+        <input type="range" id="pitchSlider" min="0.25" max="4" step="0.01" value="1.0" disabled>
+        <div>Multiplier: <span id="pitchValue">1.00</span>x</div>
+    </div>
+</div>
+
+<script>
+    const audioFile = document.getElementById('audioFile');
+    const fileName = document.getElementById('fileName');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const pitchSlider = document.getElementById('pitchSlider');
+    const pitchValue = document.getElementById('pitchValue');
+
+    // 1. Handle file selection and stream to audio element
+    audioFile.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            fileName.textContent = file.name;
+            const fileURL = URL.createObjectURL(file);
+            audioPlayer.src = fileURL;
+            
+            // Enable controls
+            pitchSlider.disabled = false;
+            
+            // Reset slider on new file load
+            pitchSlider.value = 1.0;
+            pitchValue.textContent = "1.00";
+            applyPitchAndSpeed(1.0);
+        }
+    });
+
+    // 2. Adjust pitch and speed via playbackRate adjustment
+    pitchSlider.addEventListener('input', (event) => {
+        const value = parseFloat(event.target.value);
+        pitchValue.textContent = value.toFixed(2);
+        applyPitchAndSpeed(value);
+    });
+
+    // 3. Application core logic
+    function applyPitchAndSpeed(rate) {
+        // Crucial configuration step: Forces browser to shift pitch down/up alongside speed
+        audioPlayer.preservesPitch = false; 
+        audioPlayer.playbackRate = rate;
+    }
+</script>
+
+</body>
+</html>
