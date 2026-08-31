@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Audio Speed & Pitch Changer</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 50px; }
+        .controls { margin-top: 20px; display: flex; flex-direction: column; gap: 15px; }
+    </style>
+</head>
+<body>
+
+    <h1>Audio Speed & Pitch Changer</h1>
+    
+    <!-- File selection -->
+    <input type="file" id="audioUpload" accept="audio/*">
+    
+    <div class="controls">
+        <audio id="audioPlayer" controls></audio>
+
+        <!-- Speed control -->
+        <div>
+            <label for="speed">Playback Speed: <span id="speedVal">1.0</span>x</label><br>
+            <input type="range" id="speed" min="0.0625" max="16" step="0.0025" value="1.0">
+        </div>
+
+        <!-- Pitch preservation toggle -->
+        <div>
+            <input type="checkbox" id="preservePitch" checked>
+            <label for="preservePitch">Preserve Pitch (Independent of Speed)</label>
+        </div>
+    </div>
+
+    <script>
+        const audio = document.getElementById('audioPlayer');
+        const upload = document.getElementById('audioUpload');
+        const speedSlider = document.getElementById('speed');
+        const speedVal = document.getElementById('speedVal');
+        const preserveToggle = document.getElementById('preservePitch');
+
+        // Load selected file
+        upload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                audio.src = URL.createObjectURL(file);
+            }
+        });
+
+        // Change speed
+        speedSlider.addEventListener('input', (e) => {
+            const rate = e.target.value;
+            audio.playbackRate = rate;
+            speedVal.textContent = rate;
+        });
+
+        // Toggle pitch preservation
+        preserveToggle.addEventListener('change', (e) => {
+            // true: speed changes but pitch stays the same
+            // false: speed changes and pitch shifts with it (vinyl effect)
+            audio.preservesPitch = e.target.checked;
+        });
+    </script>
+</body>
+</html>

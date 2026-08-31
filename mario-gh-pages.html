@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Audio API Pitch Changer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f4f4f9;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h2 { text-align: center; color: #333; }
+        .control-group { margin: 20px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="file"], input[type="range"] { width: 100%; }
+        .buttons { display: flex; gap: 10px; margin-top: 20px; }
+        button {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+        }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        button#stopBtn { background-color: #dc3545; }
+        .value-display { text-align: right; font-size: 14px; color: #666; }
+    </style>
+</head>
+<body>
+
+    <h2>Audio Pitch Changer</h2>
+
+    <!-- File Input -->
+    <div class="control-group">
+        <label for="audioFile">Upload Audio File:</label>
+        <input type="file" id="audioFile" accept="audio/*">
+    </div>
+
+    <!-- Pitch Slider -->
+    <div class="control-group">
+        <div style="display: flex; justify-content: space-between;">
+            <label for="pitchSlider">Pitch Adjustment:</label>
+            <span class="value-display" id="pitchVal">0 semitones</span>
+        </div>
+        <input type="range" id="pitchSlider" min="-48" max="48" value="0" step="1">
+    </div>
+
+    <!-- Playback Controls -->
+    <div class="buttons">
+        <button id="playBtn" disabled>Play</button>
+        <button id="stopBtn" disabled>Stop</button>
+    </div>
+
+    <script>
+        let audioCtx = null;
+        let audioBuffer = null;
+        let sourceNode = null;
+        let currentPitchSemitones = 0;
+
+        const audioFileInput = document.getElementById('audioFile');
+        const pitchSlider = document.getElementById('pitchSlider');
+        const pitchValDisplay = document.getElementById('pitchVal');
+        const playBtn = document.getElementById('playBtn');
+        const stopBtn = document.getElementById('stopBtn');
+
+        // Handle file upload and decode audio data
+        audioFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Initialize AudioContext on user interaction
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                playBtn.disabled = false;
+                alert('Audio file loaded successfully!');
+            } catch (err) {
+                console.error('Error decoding audio data:', err);
+                alert('Failed to process audio file. Please try a different format.');
+            }
+        });
+
+        // Play the audio with pitch modification
+        playBtn.addEventListener('click', () => {
+            if (!audioBuffer || !audioCtx) return;
+
+            // Stop any currently playing instances
+            stopAudio();
+
+            // Resume context if suspended by browser autoplay policy
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            // Create a buffer source node
+            sourceNode = audioCtx.createBufferSource();
+            sourceNode.buffer = audioBuffer;
+
+            // Apply the current detune value (1 semitone = 100 cents)
+            sourceNode.detune.value = currentPitchSemitones * 100;
+
+            // Connect to destination speakers and start playback
+            sourceNode.connect(audioCtx.destination);
+            sourceNode.start(0);
+
+            playBtn.disabled = true;
+            stopBtn.disabled = false;
+
+            // Reset buttons when playback ends naturally
+            sourceNode.onended = () => {
+                playBtn.disabled = false;
+                stopBtn.disabled = true;
+            };
+        });
+
+        // Stop audio playback
+        stopBtn.addEventListener('click', stopAudio);
+
+        function stopAudio() {
+            if (sourceNode) {
+                try {
+                    sourceNode.stop();
+                } catch (e) {
+                    // Node might have already stopped
+                }
+                sourceNode = null;
+            }
+            playBtn.disabled = false;
+            stopBtn.disabled = true;
+        }
+
+        // Real-time pitch adjustment listener
+        pitchSlider.addEventListener('input', (e) => {
+            currentPitchSemitones = parseInt(e.target.value);
+            pitchValDisplay.textContent = `${currentPitchSemitones > 0 ? '+' : ''}${currentPitchSemitones} semitones`;
+
+            // Dynamically update pitch if audio is currently playing
+            if (sourceNode) {
+                sourceNode.detune.value = currentPitchSemitones * 100;
+            }
+        });
+    </script>
+</body>
+</html>
